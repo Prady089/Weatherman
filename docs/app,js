@@ -1,0 +1,18 @@
+fetch("weather.json")
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById("city").textContent = d.city;
+    document.getElementById("date").textContent = d.date;
+    document.getElementById("temp").textContent = d.now + "°";
+    document.getElementById("desc").textContent = d.desc;
+    document.getElementById("high").textContent = d.high + "°";
+    document.getElementById("low").textContent = d.low + "°";
+    document.getElementById("humidity").textContent = d.humidity + "%";
+    document.getElementById("wind").textContent = d.wind;
+    document.getElementById("rain").textContent = d.rain + "%";
+
+    document.getElementById("morning").textContent = d.blocks.morning;
+    document.getElementById("noon").textContent = d.blocks.noon;
+    document.getElementById("evening").textContent = d.blocks.evening;
+    document.getElementById("night").textContent = d.blocks.night;
+  });
