@@ -45,6 +45,8 @@ def send_push(title: str, message: str, priority: int = 0):
             "title": title,
             "message": message,
             "priority": priority,
+            "url": "https://prady089.github.io/Weatherman/",
+            "url_title": "Open Weather Dashboard"
         },
         timeout=20,
     )
