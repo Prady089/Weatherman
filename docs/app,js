@@ -1,21 +1,31 @@
-fetch("weather.json?v=" + Date.now())
-  .then(r => r.json())
-  .then(d => {
-    document.getElementById("city").textContent = d.city;
-    document.getElementById("date").textContent = d.date;
-    document.getElementById("temp").textContent = d.now + "°";
-    document.getElementById("desc").textContent = d.desc;
-    document.getElementById("high").textContent = d.high + "°";
-    document.getElementById("low").textContent = d.low + "°";
-    document.getElementById("humidity").textContent = d.humidity + "%";
-    document.getElementById("wind").textContent = d.wind;
-    document.getElementById("rain").textContent = d.rain + "%";
+window.addEventListener("load", () => {
+  const dbg = document.getElementById("debug");
+  const url = "weather.json?v=" + Date.now();
 
-    document.getElementById("morning").textContent = d.blocks.morning;
-    document.getElementById("noon").textContent = d.blocks.noon;
-    document.getElementById("evening").textContent = d.blocks.evening;
-    document.getElementById("night").textContent = d.blocks.night;
-  })
-  .catch(err => {
-    console.error("Failed to load weather.json", err);
-  });
+  fetch(url)
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status} loading ${url}`);
+      return r.json();
+    })
+    .then(d => {
+      dbg.textContent = `✅ Loaded at ${new Date().toLocaleTimeString()} | ${d.city}`;
+
+      document.getElementById("city").textContent = d.city;
+      document.getElementById("date").textContent = d.date;
+      document.getElementById("temp").textContent = d.now + "°";
+      document.getElementById("desc").textContent = d.desc;
+      document.getElementById("high").textContent = d.high + "°";
+      document.getElementById("low").textContent = d.low + "°";
+      document.getElementById("humidity").textContent = d.humidity + "%";
+      document.getElementById("wind").textContent = d.wind;
+      document.getElementById("rain").textContent = d.rain + "%";
+
+      document.getElementById("morning").textContent = d.blocks.morning;
+      document.getElementById("noon").textContent = d.blocks.noon;
+      document.getElementById("evening").textContent = d.blocks.evening;
+      document.getElementById("night").textContent = d.blocks.night;
+    })
+    .catch(err => {
+      dbg.textContent = "❌ " + err.message;
+    });
+});
