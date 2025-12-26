@@ -1,5 +1,8 @@
 name: Generate Daily Weather Dashboard
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: "0 12 * * *"   # adjust for your timezone
