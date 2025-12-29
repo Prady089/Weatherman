@@ -22,6 +22,8 @@ STATE_FILE = ".state/alert_state.json"
 QUIET_START = 23  # 11 PM
 QUIET_END = 6     # 6 AM
 
+# Cold thresholds (Celsius)
+# Ordered LOW → HIGH importance (we'll reverse when checking)
 COLD_THRESHOLDS = [
     (15, "🧥 Cool Weather Alert", "A light jacket may be useful."),
     (10, "❄️ Cold Weather Alert", "Dress warmly if heading out."),
@@ -31,12 +33,12 @@ COLD_THRESHOLDS = [
 
 # ================= GUARDS =================
 if not OW_KEY or not PUSH_TOKEN or not PUSH_USER:
-    print("❌ Missing environment variables")
+    print("❌ Missing required environment variables")
     sys.exit(1)
 
 # ================= HELPERS =================
-def is_quiet_hours(now_hour: int) -> bool:
-    return QUIET_START <= now_hour or now_hour < QUIET_END
+def is_quiet_hours(hour: int) -> bool:
+    return QUIET_START <= hour or hour < QUIET_END
 
 def send_push(title, message, priority=1):
     r = requests.post(
@@ -56,12 +58,21 @@ def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, "r") as f:
             return json.load(f)
-    return {"rain_alerted": False, "cold": {}}
+    return {
+        "rain_alerted": False,
+        "last_feels_like": None
+    }
 
 def save_state(state):
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "w") as f:
         json.dump(state, f)
+
+def crossed(prev, curr, threshold):
+    """
+    True only if temperature crossed BELOW the threshold
+    """
+    return prev is not None and prev > threshold >= curr
 
 # ================= FETCH WEATHER =================
 url = (
@@ -71,6 +82,8 @@ url = (
 
 data = requests.get(url, timeout=20).json()
 now = datetime.now(TZ)
+hour = now.hour
+
 state = load_state()
 
 # ================= 🌧️ RAIN ALERT =================
@@ -94,28 +107,38 @@ if rain_soon and not state["rain_alerted"]:
 if not rain_soon:
     state["rain_alerted"] = False
 
-# ================= ❄️ COLD ALERTS =================
+# ================= ❄️ COLD ALERTS (FIXED LOGIC) =================
+current_temp = round(data["current"]["temp"])
 current_feels = round(data["current"]["feels_like"])
-hour = now.hour
+last_feels = state.get("last_feels_like")
 
-for threshold, title, advice in COLD_THRESHOLDS:
-    crossed = current_feels <= threshold
-    prev = state["cold"].get(str(threshold), False)
+alert_to_send = None
 
-    if crossed and not prev:
-        if is_quiet_hours(hour) and threshold > 0:
-            continue  # suppress minor alerts at night
+# Check most severe thresholds first
+for threshold, title, advice in sorted(COLD_THRESHOLDS, reverse=True):
+    if crossed(last_feels, current_feels, threshold):
+        alert_to_send = (threshold, title, advice)
+        break  # ONLY ONE alert per run
+
+if alert_to_send:
+    threshold, title, advice = alert_to_send
+
+    # Quiet hours suppression (except freezing)
+    if not (is_quiet_hours(hour) and threshold > 0):
+        message = (
+            f"Current: {current_temp}°C\n"
+            f"Feels like: {current_feels}°C\n\n"
+            f"{advice}"
+        )
 
         send_push(
             title,
-            f"Feels like {current_feels}°C in {CITY}.\n{advice}",
+            message,
             priority=2 if threshold <= 0 else 1
         )
-        state["cold"][str(threshold)] = True
 
-    if not crossed:
-        state["cold"][str(threshold)] = False
-
-# ================= SAVE STATE =================
+# Update state
+state["last_feels_like"] = current_feels
 save_state(state)
+
 print("✅ Rain + cold alert check complete")
