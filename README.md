@@ -1,114 +1,174 @@
-🌦️ Weatherman — Smart Weather Alerts & Daily Dashboard
+🌦️ Weatherman
+Smart Weather Alerts & Static Daily Dashboard
 
-Weatherman is a personal, automation-driven weather alert system that delivers:
+Weatherman is a personal, automation-driven weather intelligence system designed to deliver high-signal weather alerts and a clean daily weather overview without noise, polling, or unreliable client-side logic.
 
-📱 Smart push notifications (rain + cold alerts)
+Unlike traditional weather apps that constantly push updates, Weatherman focuses on:
 
-🧠 Noise-free alerts based on threshold crossings
+Event-based alerts
 
-🖼️ A static, mobile-friendly daily weather dashboard
+Human-centric thresholds
 
-🔐 Secure API usage (no keys exposed in the browser)
+Reliability over interactivity
 
-⚙️ Fully automated via GitHub Actions
+Static rendering for zero runtime failures
 
-This project is designed to be reliable, minimal, and human-centric — not a full weather app, but a signal-driven assistant.
+🎯 Project Goals
 
-✨ Key Features
+This project was built to answer a simple question:
+
+“How can I get only the weather alerts that actually matter to me, without being spammed?”
+
+Key goals:
+
+Avoid notification fatigue
+
+Alert only when weather crosses meaningful thresholds
+
+Respect sleep hours (quiet hours)
+
+Provide a visual context only when needed
+
+Keep infrastructure simple, cheap, and reliable
+
+✨ Core Features
 🌧️ Rain Alerts
 
-Notifies when rain is expected soon
+Detects rain expected soon (near-term forecast)
 
 Fires once per rain event
 
-Avoids repeat notifications
+Automatically resets after rain passes
 
-❄️ Cold Weather Alerts (Smart Thresholds)
+Prevents repeated notifications for the same event
 
-Alerts trigger only when temperature crosses below a threshold:
+Example:
 
-Threshold	Alert
-≤ 15°C	🧥 Cool weather
-≤ 10°C	❄️ Cold
-≤ 5°C	🧊 Very cold
-≤ 0°C	🥶 Freezing (critical)
+🌧️ Rain Alert
+Rain expected around 6:40 PM.
+Take an umbrella ☔
 
-✔ Uses feels-like temperature
-✔ Sends only one alert per crossing
-✔ Prevents alert spam
+❄️ Smart Cold Weather Alerts (Threshold-Based)
 
-🌙 Quiet Hours Support
+Cold alerts trigger only when temperature crosses below a defined threshold, not merely because it is cold.
 
-Quiet hours: 11 PM – 6 AM
+Temperature thresholds (Celsius):
+Threshold	Meaning	Alert Type
+≤ 15°C	Cool weather	Informational
+≤ 10°C	Cold	Notice
+≤ 5°C	Very cold	Warning
+≤ 0°C	Freezing	Critical
+Important behavior:
 
-Informational alerts are suppressed
+Uses feels-like temperature (wind + humidity aware)
 
-Freezing alerts always break through
+Sends only one alert per threshold crossing
 
-This ensures alerts remain trustworthy and non-intrusive.
+Never sends multiple alerts in a single run
 
-🖼️ Daily Weather Dashboard
+Will alert again only after warming above a threshold and dropping again later
 
-Generated once every morning
+This avoids alert spam while still capturing meaningful weather changes.
 
-Fully static HTML (no JS fetch, no caching issues)
+🌙 Quiet Hours Logic
 
-Optimized for iPhone lock-screen viewing
+To prevent unnecessary disturbances:
 
-Linked directly from push notifications
+Quiet hours are defined as 11 PM – 6 AM
 
-Shows:
+During quiet hours:
+
+Informational alerts (15°C, 10°C, 5°C) are suppressed
+
+Freezing alerts (≤ 0°C) always break through
+
+This mirrors real-world alerting systems where safety overrides convenience.
+
+🧠 Example Behavior Matrix
+Scenario	Alert Sent?
+16°C → 14°C (daytime)	✅ Yes (15°C alert)
+14°C → 9°C (daytime)	✅ Yes (10°C alert)
+9°C → 4°C (night)	❌ No (quiet hours)
+4°C → −2°C (night)	✅ Yes (freezing alert)
+−2°C → −6°C	❌ No (already below)
+−6°C → 6°C	❌ No (warming)
+6°C → −1°C (new cold front)	✅ Yes
+🖼️ Daily Weather Dashboard (Static)
+
+Weatherman generates a fully rendered static HTML dashboard once per day.
+
+Why static?
+
+No JavaScript fetch
+
+No client-side API calls
+
+No caching or Safari quirks
+
+Guaranteed to work on any device
+
+Dashboard shows:
+
+City & date
 
 Current temperature
 
 Feels-like temperature
 
-High / Low
+Weather description
+
+Daily high / low
 
 Rain probability
 
 Wind & humidity
 
-Morning / Noon / Evening / Night ranges
+Morning / Noon / Evening / Night temperature ranges
+
+Access:
+
+Hosted via GitHub Pages
+
+Linked directly from the daily push notification
 
 🧠 Architecture Overview
 OpenWeather API
       ↓
-GitHub Actions (cron or manual)
+GitHub Actions (scheduled / manual)
       ↓
 Python scripts
       ↓
-Static HTML dashboard (docs/index.html)
+Static HTML generation
       ↓
 GitHub Pages
       ↓
-Pushover notifications → tap to open dashboard
+Push notification → tap → dashboard
 
+Key design choice:
 
-No live polling. No browser-side API calls.
+No live polling, no browser logic, no API keys on the client
 
-📁 Project Structure
+📁 Repository Structure
 /
 ├── docs/
-│   └── index.html            # Generated daily dashboard
-├── generate_index_html.py    # Builds the static dashboard
-├── rain_alert.py             # Rain + cold alert engine
+│   └── index.html              # Generated daily dashboard
+├── generate_index_html.py      # Builds static dashboard HTML
+├── rain_alert.py               # Rain + cold alert engine
 └── .github/workflows/
-    └── generate_dashboard.yml
+    └── generate_dashboard.yml  # Automation pipeline
 
-🔐 Required Secrets (GitHub Actions)
+🔐 Secrets & Configuration
+Required GitHub Secrets
 
-Add these in:
+Add under Settings → Secrets → Actions:
 
-Repo → Settings → Secrets → Actions
+Secret	Purpose
+OPENWEATHER_API_KEY	Weather data
+PUSHOVER_TOKEN	Push notification app token
+PUSHOVER_USER	Push notification user key
+Environment Configuration
 
-Name	Description
-OPENWEATHER_API_KEY	OpenWeather API key
-PUSHOVER_TOKEN	Pushover application token
-PUSHOVER_USER	Pushover user key
-⚙️ Configuration (Environment Variables)
-
-Set via GitHub Actions:
+Configured inside GitHub Actions:
 
 CITY: McKinney
 LAT: "33.1546624"
@@ -116,28 +176,54 @@ LON: "-96.7180288"
 TZ: America/Chicago
 
 
-Units are fixed to Celsius.
+Units are fixed to Celsius by design.
 
-▶️ How It Runs
-Daily Dashboard
+⚙️ How Automation Works
+Dashboard Generation
 
-Runs automatically every morning (cron)
+Runs once per day via cron
 
-Can also be triggered manually from GitHub Actions
+Can be triggered manually
 
 Generates docs/index.html
 
-Deployed via GitHub Pages
+Automatically committed and deployed
 
-Alerts
+Alert Engine
 
 Intended to run every 10–15 minutes
 
-Sends notifications only when something changes
+Stateless across runs except for a small state file
 
-Uses state tracking to avoid duplicates
+Sends notifications only when a new event occurs
 
-📱 Notification Experience
+🧠 State Management
+
+A small JSON state file tracks:
+
+Whether a rain alert has already been sent
+
+Last recorded feels-like temperature
+
+This allows the system to:
+
+Detect threshold crossings
+
+Avoid duplicate alerts
+
+Reset naturally when conditions change
+
+📱 Notification UX Philosophy
+
+Notifications are designed to be:
+
+Short
+
+Actionable
+
+Rare
+
+Trustworthy
 
 Example cold alert:
 
@@ -148,49 +234,59 @@ Feels like: -6°C
 
 Risk of frost or icy surfaces.
 
+🛠️ Design Principles
 
-Example daily notification:
+Event-driven, not condition-driven
 
-🌤️ Today – McKinney
-24°C Clear
-⬆ 27° ⬇ 17°
+Human-centric metrics
 
-Open Weather Dashboard →
+Static over dynamic
 
-🎯 Design Principles
+Automation over manual checks
 
-Signal over noise
+Silence is success
 
-Event-based alerts, not constant updates
+🚀 Possible Future Enhancements
 
-Human-centric data (feels-like temperature)
+Forecast-based cold alerts (“will drop below 0°C in 2 hours”)
 
-Static over dynamic for reliability
-
-Automation-first
-
-🛠️ Possible Enhancements
-
-Forecast-based cold alerts
-
-Commute-aware alert timing
+Commute-hour sensitivity
 
 Weekend vs weekday behavior
 
-7-day static forecast on dashboard
+Configurable thresholds via environment variables
 
-UI refinement via Figma
+7-day static forecast
+
+UI polish via Figma
 
 Additional alert channels (email, Slack)
 
 📜 License
 
-Personal project — feel free to fork, adapt, and extend.
+Personal project.
+Feel free to fork, adapt, and extend.
 
-🙌 Acknowledgements
+🙌 Credits
 
 OpenWeather API
 
 Pushover Notifications
 
-GitHub Actions & Pages
+GitHub Actions
+
+GitHub Pages
+
+✅ Summary
+
+Weatherman is not a weather app — it is a signal system.
+
+It tells you:
+
+When weather changes
+
+When weather matters
+
+And stays silent the rest of the time
+
+That is intentional.
