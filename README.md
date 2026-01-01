@@ -232,10 +232,4 @@ Built with:
 - [Pushover](https://pushover.net/)
 - GitHub Actions + Pages
 
-## License
 
-Personal project. Fork, adapt, and extend as needed.
-
----
-
-*"The best interface is no interface." — Golden Krishna*
