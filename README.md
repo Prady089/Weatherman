@@ -1,4 +1,5 @@
 🌦️ Weatherman
+
 Smart Weather Alerts & Static Daily Dashboard
 
 Weatherman is a personal, automation-driven weather intelligence system designed to deliver high-signal weather alerts and a clean daily weather overview without noise, polling, or unreliable client-side logic.
